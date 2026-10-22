@@ -1,27 +1,28 @@
 sequenceDiagram
-  autonumber
-  actor Operator
-  participant UI as POS UI
-  participant UseCase as Refund/Reversal Use Case
-  participant Repo as Transaction Repository
-  participant Processor as Mock Processor
-  Operator->>UI: Select original transaction
-  UI->>UseCase: Request refund or reversal with distinct idempotency key
-  UseCase->>Repo: Load original transaction and operation history
-  Repo-->>UseCase: Original status and prior operations
-  UseCase->>UseCase: Validate operation-specific preconditions
-  alt Invalid state or duplicate operation
-    UseCase-->>UI: Reject with safe reason
-  else Valid request
-    UseCase->>Repo: Persist pending operation linked to original
-    UseCase->>Processor: Submit synthetic refund/reversal
-    alt Confirmed result
-      Processor-->>UseCase: Approved / declined
-      UseCase->>Repo: Persist final operation state
-      UseCase-->>UI: Display result and reference
-    else Timeout or unknown response
-      Processor--xUseCase: Ambiguous outcome
-      UseCase->>Repo: Mark UNKNOWN_OUTCOME and reconciliation required
-      UseCase-->>UI: Show pending confirmation; do not resubmit as new operation
+    autonumber
+    actor Operator
+    participant UI as POS UI
+    participant Ops as Refund or Reversal Use Case
+    participant Repo as Transaction Repository
+    participant Processor as Mock Processor
+
+    Operator->>UI: Select original transaction
+    UI->>Ops: Request refund or reversal with a distinct idempotency key
+    Ops->>Repo: Load original transaction and operation history
+    Repo-->>Ops: Return original status and prior operations
+    Ops->>Ops: Validate operation-specific preconditions
+    alt Invalid state or duplicate operation
+        Ops-->>UI: Reject request with safe reason
+    else Valid request
+        Ops->>Repo: Persist pending operation linked to original
+        Ops->>Processor: Submit synthetic refund or reversal
+        alt Definitive response received
+            Processor-->>Ops: Simulated approval or decline
+            Ops->>Repo: Persist final operation state
+            Ops-->>UI: Display result and safe reference
+        else Timeout or unknown response
+            Processor--xOps: Outcome cannot be confirmed
+            Ops->>Repo: Persist UNKNOWN_OUTCOME and reconciliation-required flag
+            Ops-->>UI: Show pending confirmation; do not create a new operation
+        end
     end
-  end
