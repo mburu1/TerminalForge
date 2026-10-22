@@ -56,4 +56,4 @@ See [TerminalForge POS Architecture README](TerminalForge_POS_Architecture_READM
 
 ## Current status
 
-The repository currently contains architecture documentation and Mermaid diagram sources. Treat the target structure and future backend as planned until their implementation, tests, and CI results are present. No build or test result is implied by the diagrams alone.
+The repository now contains the Kotlin/Compose Android starter, Gradle Kotlin DSL configuration, a version catalog, a starter unit test, CI workflow, and validated Mermaid architecture sources. Transaction domain logic, payment/hardware simulators, persistence, and the optional backend remain planned. The CI workflow has been committed, but a passing build is not claimed until its first run succeeds. See [implementation status](docs/implementation-status.md).
