@@ -25,7 +25,7 @@ class TransactionTest {
     }
 
     @Test
-    fun timeoutCanBecomeUnknownOutcomeButNotDefinitiveDecline() {
+    fun unknownOutcomeCannotBecomeDefinitiveDecline() {
         val processing = transaction()
             .transitionTo(TransactionState.VALIDATING)
             .transitionTo(TransactionState.READY)
@@ -36,7 +36,8 @@ class TransactionTest {
             processing.transitionTo(TransactionState.UNKNOWN_OUTCOME).state
         )
         assertThrows(IllegalArgumentException::class.java) {
-            processing.transitionTo(TransactionState.DECLINED)
+            processing.transitionTo(TransactionState.UNKNOWN_OUTCOME)
+                .transitionTo(TransactionState.DECLINED)
         }
     }
 
