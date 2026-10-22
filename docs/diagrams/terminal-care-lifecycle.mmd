@@ -1,0 +1,13 @@
+stateDiagram-v2
+  [*] --> Reported
+  Reported --> Triaged: Validate issue report
+  Triaged --> Assigned: Assign technician
+  Triaged --> Rejected: Invalid / duplicate report
+  Assigned --> InProgress: Technician accepts
+  InProgress --> AwaitingParts: Parts required
+  AwaitingParts --> InProgress: Parts received
+  InProgress --> Resolved: Repair and diagnostics pass
+  Resolved --> Closed: Reporter / supervisor confirms
+  Resolved --> InProgress: Verification failed
+  Closed --> [*]
+  Rejected --> [*]
