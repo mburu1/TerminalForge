@@ -1,0 +1,30 @@
+flowchart LR
+  subgraph Domain["Domain ports"]
+    readerPort["CardReader"]
+    printerPort["ReceiptPrinter"]
+    statusPort["TerminalStatusProvider"]
+    hardwarePort["TerminalHardware"]
+  end
+  subgraph Implementations["Adapter implementations"]
+    simulator["Deterministic terminal simulator"]
+    vendorAdapter["Future authorized vendor adapter"]
+  end
+  subgraph Faults["Injectable simulator faults"]
+    disconnect["Reader disconnected"]
+    timeout["Operation timeout"]
+    paper["Printer out of paper"]
+    cancel["Operator cancellation"]
+    duplicate["Duplicate callback"]
+  end
+  readerPort -. implemented by .-> simulator
+  printerPort -. implemented by .-> simulator
+  statusPort -. implemented by .-> simulator
+  hardwarePort -. implemented by .-> simulator
+  readerPort -. implemented only after approval/docs .-> vendorAdapter
+  printerPort -. implemented only after approval/docs .-> vendorAdapter
+  simulator --> disconnect
+  simulator --> timeout
+  simulator --> paper
+  simulator --> cancel
+  simulator --> duplicate
+  boundary["No real PIN capture, payment cryptography, or uncertified device claims"] --- vendorAdapter
