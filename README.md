@@ -1,59 +1,38 @@
 # TerminalForge
 
-**Simulator-first Android POS Terminal Architecture Lab** built around Kotlin-first Android development, Java interoperability, transaction reliability, hardware abstraction, and security-by-design.
+Simulator-first Android POS Terminal Architecture Lab built with Kotlin, Java interoperability, transaction reliability, hardware abstraction, and security-by-design.
 
 > Educational portfolio project only. Use synthetic data and mock/sandbox integrations. This is not production payment software and does not claim PCI DSS, EMVCo, card-scheme, or processor certification. Never use real cardholder data, PINs, cryptographic keys, or live payment credentials.
 
-## Architecture at a glance
+## M2 simulated-sale vertical slice
 
-```mermaid
-flowchart TB
-  operator["POS Operator"] --> app["TerminalForge Android POS"]
-  technician["Support Technician"] --> care["Terminal Care"]
-  app --> domain["Domain use cases"]
-  domain --> payment["Payment processor port"]
-  domain --> hardware["Hardware capability ports"]
-  domain --> repository["Transaction repository"]
-  payment --> mock["Mock processor"]
-  hardware --> simulator["Terminal simulator"]
-  repository --> db[("Local Room database")]
-  mock --> reconciliation["Reconciliation"]
-  db --> reconciliation
-```
+M2 includes an Android-independent payment processor port, deterministic mock processor, in-memory transaction repository, and ExecuteSale use case. It reuses the existing Money, Transaction, OperationType, and TransactionState model. The mock supports APPROVED, DECLINED, and FAILED scenarios. Approved references are synthetic and stable for the same transaction ID. Adapter exceptions become typed failures, and duplicate transaction IDs are rejected before processor invocation.
 
-## Mermaid architecture diagrams
+### Verify
 
-All diagrams are stored as editable Mermaid source under [`docs/diagrams/`](https://github.com/mburu1/TerminalForge/tree/main/docs/diagrams).
+From the repository root, with JDK 17 and Android SDK configured, run:
 
-| Diagram | Purpose |
-|---|---|
-| [System context](docs/diagrams/context.mmd) | Users, Android app, domain, adapters, persistence, reconciliation, optional sandbox backend |
-| [Container and module view](docs/diagrams/container-and-module-view.mmd) | Module responsibilities and dependency boundaries |
-| [Transaction sequence](docs/diagrams/transaction-sequence.mmd) | Simulated sale, idempotency lookup, processor response, ambiguous outcomes |
-| [Transaction state machine](docs/diagrams/state-machine.mmd) | Sale, unknown outcome, reconciliation, reversal, and refund states |
-| [Deployment view](docs/diagrams/deployment.mmd) | Android device, development workstation, and optional sandbox services |
-| [Idempotency and retries](docs/diagrams/idempotency-and-retries.mmd) | Duplicate prevention, key conflicts, safe retries, and reconciliation |
-| [Reconciliation workflow](docs/diagrams/reconciliation.mmd) | Match local transactions to synthetic settlement records and classify discrepancies |
-| [Hardware adapter boundary](docs/diagrams/hardware-adapter.mmd) | Reader, printer, status ports, simulator faults, future authorized adapters |
-| [Terminal Care lifecycle](docs/diagrams/terminal-care-lifecycle.mmd) | Maintenance issue reporting, assignment, repair, verification, closure |
-| [Security trust boundaries](docs/diagrams/security-trust-boundaries.mmd) | Threats, app boundaries, redacted diagnostics, synthetic-data constraints |
-| [Quality and release pipeline](docs/diagrams/quality-and-release-pipeline.mmd) | Build, tests, lint, security review, reporting, human release gate |
-| [Refund and reversal sequence](docs/diagrams/refund-reversal-sequence.mmd) | Separate operation preconditions and ambiguous-response handling |
+- `./gradlew :app:testDebugUnitTest`
+- `./gradlew :app:lintDebug`
+- `./gradlew :app:assembleDebug`
 
-## Architecture specification
+On Windows, use `gradlew.bat` instead of `./gradlew`. If wrapper scripts are not present, use Android Studio Gradle sync or generate and commit the wrapper first.
 
-See [TerminalForge POS Architecture README](TerminalForge_POS_Architecture_README.md) for the full product scope, Windows 11 setup, target repository tree, dependency rules, domain model, implementation milestones M0–M10, test strategy, and definition of done.
+The M2 repository is in-memory and is not durable across process restarts. Determinism is not idempotency; duplicate logical requests, timeout ambiguity, and recovery remain M3 work.
+
+## Architecture documentation
+
+See [TerminalForge POS Architecture README](TerminalForge_POS_Architecture_README.md), [diagrams](docs/diagrams), and [implementation status](docs/implementation-status.md).
 
 ## Engineering principles
 
 - Kotlin-first Android application; Java used where interoperability is useful.
 - Keep domain rules independent of Android UI and concrete infrastructure.
 - Route processor and hardware interactions through replaceable interfaces.
-- Use idempotency keys, explicit transaction states, and reconciliation for ambiguous outcomes.
+- Use explicit transaction states and reconciliation for ambiguous outcomes.
 - Store money as integer minor units; never use floating-point arithmetic for amounts.
 - Keep diagnostics redacted and use synthetic data only.
-- Treat diagrams and architecture claims as documentation to keep aligned with implementation.
 
 ## Current status
 
-The repository now contains the Kotlin/Compose Android starter, Gradle Kotlin DSL configuration, a version catalog, a starter unit test, CI workflow, and validated Mermaid architecture sources. Transaction domain logic, payment/hardware simulators, persistence, and the optional backend remain planned. The CI workflow has been committed, but a passing build is not claimed until its first run succeeds. See [implementation status](docs/implementation-status.md).
+M0 and M1 foundations are present. The M2 simulated-sale domain slice and its unit tests are implemented. Run the documented Gradle tasks and inspect CI before treating the build as verified.
