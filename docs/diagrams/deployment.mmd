@@ -1,0 +1,21 @@
+flowchart TB
+  subgraph Device["Android device (development / demo)"]
+    app["TerminalForge APK"]
+    room[("Room local database")]
+    simulator["In-process terminal simulator"]
+    app <--> room
+    app <--> simulator
+  end
+  subgraph DevMachine["Developer workstation (optional)"]
+    androidStudio["Android Studio + Gradle"]
+    emulator["Android emulator or USB device"]
+    androidStudio --> emulator
+  end
+  subgraph OptionalServices["Optional local sandbox services"]
+    api["Kotlin/JVM API"]
+    mock["Mock processor / settlement fixture"]
+    api --> mock
+  end
+  emulator -. "install / debug" .-> app
+  app -. "optional HTTPS sandbox API only" .-> api
+  app -. "no live processor" .-> policy["Synthetic data only; no cardholder data, PINs, keys, or production credentials"]
