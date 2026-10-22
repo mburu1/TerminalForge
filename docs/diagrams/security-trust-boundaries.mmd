@@ -1,0 +1,19 @@
+flowchart TB
+  operator["Operator / technician"] -->|validated UI input| app["Android app boundary"]
+  subgraph TrustedApp["App process: minimize and validate trust"]
+    validation["Input validation + use cases"]
+    redaction["Redacted diagnostics"]
+    repository["Repository interfaces"]
+    validation --> repository
+    validation --> redaction
+  end
+  app --> validation
+  repository --> local["Local database: synthetic transaction metadata"]
+  repository --> adapter["Mock/sandbox adapter"]
+  adapter --> sandbox["Optional sandbox API / mock processor"]
+  attacker["Threats: rooted device, tampering, replay, dependency compromise"] -. threats .-> app
+  attacker -. threats .-> local
+  attacker -. threats .-> sandbox
+  prohibited["Never store/log/send real PAN, PIN, track data, keys, or live credentials"]
+  prohibited --- redaction
+  boundary["Educational simulator only; no PCI/EMV certification claim"] --- sandbox
