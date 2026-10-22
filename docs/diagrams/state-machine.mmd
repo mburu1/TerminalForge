@@ -1,0 +1,24 @@
+stateDiagram-v2
+  [*] --> CREATED
+  CREATED --> VALIDATING
+  VALIDATING --> READY: Request valid
+  VALIDATING --> FAILED: Invalid request
+  READY --> PROCESSING
+  PROCESSING --> APPROVED: Confirmed approval
+  PROCESSING --> DECLINED: Confirmed decline
+  PROCESSING --> FAILED: Definitive processing failure
+  PROCESSING --> UNKNOWN_OUTCOME: Timeout / lost response
+  UNKNOWN_OUTCOME --> RECONCILIATION_REQUIRED
+  RECONCILIATION_REQUIRED --> RESOLVED: Authoritative result matched
+  RESOLVED --> APPROVED: Settled as approved
+  RESOLVED --> DECLINED: Settled as declined
+  APPROVED --> REVERSAL_PENDING: Reversal requested
+  REVERSAL_PENDING --> REVERSED: Reversal confirmed
+  REVERSAL_PENDING --> UNKNOWN_OUTCOME: Reversal response ambiguous
+  APPROVED --> REFUND_PENDING: Separate refund requested
+  REFUND_PENDING --> REFUNDED: Refund confirmed
+  REFUND_PENDING --> UNKNOWN_OUTCOME: Refund response ambiguous
+  DECLINED --> [*]
+  FAILED --> [*]
+  REVERSED --> [*]
+  REFUNDED --> [*]
