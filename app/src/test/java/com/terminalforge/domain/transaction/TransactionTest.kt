@@ -5,7 +5,7 @@ import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class TransactionTest {
-    private fun transaction() = Transaction(
+    private fun transaction() = Transaction.create(
         id = "txn-test-001",
         amount = Money(1250, "KES"),
         operationType = OperationType.SALE,
@@ -56,10 +56,10 @@ class TransactionTest {
     @Test
     fun transactionRequiresPositiveAmountAndIdempotencyKey() {
         assertThrows(IllegalArgumentException::class.java) {
-            transaction().copy(amount = Money(0, "KES"))
+            Transaction.create("txn-zero", Money(0, "KES"), OperationType.SALE, "idem-zero", 1L)
         }
         assertThrows(IllegalArgumentException::class.java) {
-            transaction().copy(idempotencyKey = " ")
+            Transaction.create("txn-blank-key", Money(1, "KES"), OperationType.SALE, " ", 1L)
         }
     }
 }

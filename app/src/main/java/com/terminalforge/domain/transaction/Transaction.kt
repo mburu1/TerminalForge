@@ -23,11 +23,15 @@ enum class TransactionState {
     REVERSED
 }
 
-data class Transaction(
+/**
+ * Immutable transaction snapshot. Instances begin in CREATED; later state changes
+ * must go through transitionTo so callers cannot bypass the transition graph.
+ */
+class Transaction private constructor(
     val id: String,
     val amount: Money,
     val operationType: OperationType,
-    val state: TransactionState = TransactionState.CREATED,
+    val state: TransactionState,
     val idempotencyKey: String,
     val createdAtEpochMillis: Long
 ) {
@@ -42,10 +46,32 @@ data class Transaction(
         require(next in ALLOWED_TRANSITIONS.getValue(state)) {
             "Illegal transaction state transition: $state -> $next"
         }
-        return copy(state = next)
+        return Transaction(
+            id = id,
+            amount = amount,
+            operationType = operationType,
+            state = next,
+            idempotencyKey = idempotencyKey,
+            createdAtEpochMillis = createdAtEpochMillis
+        )
     }
 
     companion object {
+        fun create(
+            id: String,
+            amount: Money,
+            operationType: OperationType,
+            idempotencyKey: String,
+            createdAtEpochMillis: Long
+        ): Transaction = Transaction(
+            id = id,
+            amount = amount,
+            operationType = operationType,
+            state = TransactionState.CREATED,
+            idempotencyKey = idempotencyKey,
+            createdAtEpochMillis = createdAtEpochMillis
+        )
+
         private val ALLOWED_TRANSITIONS = mapOf(
             TransactionState.CREATED to setOf(TransactionState.VALIDATING, TransactionState.FAILED),
             TransactionState.VALIDATING to setOf(TransactionState.READY, TransactionState.FAILED),
