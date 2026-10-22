@@ -1,0 +1,22 @@
+flowchart TD
+  start([Receive operation request]) --> validate{Valid request?}
+  validate -- No --> reject["Reject with safe validation error"]
+  validate -- Yes --> lookup["Look up idempotency key"]
+  lookup --> exists{Existing operation?}
+  exists -- Yes --> fingerprint{Same request fingerprint?}
+  fingerprint -- No --> conflict["Reject key reuse with different payload"]
+  fingerprint -- Yes --> returnExisting["Return stored operation/result"]
+  exists -- No --> persist["Atomically reserve key and persist CREATED"]
+  persist --> send["Send once to mock processor with same key"]
+  send --> outcome{Outcome known?}
+  outcome -- Approved/declined --> store["Persist definitive result"]
+  outcome -- Timeout/lost response --> unknown["Persist UNKNOWN_OUTCOME"]
+  unknown --> reconcile["Query/reconcile using stable reference"]
+  reconcile --> resolved{Authoritative result found?}
+  resolved -- Yes --> store
+  resolved -- No --> hold["Keep pending; manual/next reconciliation"]
+  store --> finish([Return safe result])
+  reject --> finish
+  conflict --> finish
+  returnExisting --> finish
+  hold --> finish
