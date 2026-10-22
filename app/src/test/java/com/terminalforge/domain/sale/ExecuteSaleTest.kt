@@ -25,11 +25,11 @@ class ExecuteSaleTest {
   val result=useCase(DeterministicMockPaymentProcessor(DeterministicMockPaymentProcessor.Scenario.FAILED),repo).execute(request("failed"))
   assertTrue(result is SaleResult.Failed); assertEquals(TransactionState.FAILED,repo.findById("txn-m2-1")?.state)
  }
- @Test fun adapterExceptionBecomesTypedFailure() {
+ @Test fun adapterExceptionBecomesUnknownOutcome() {
   val repo=InMemoryTransactionRepository(); val p=PaymentProcessor { _:PaymentRequest -> error("simulated adapter error") }
   val result=useCase(p,repo).execute(request("exception"))
-  assertTrue(result is SaleResult.Failed); assertEquals("PROCESSOR_ADAPTER_ERROR",(result as SaleResult.Failed).reasonCode)
-  assertEquals(TransactionState.FAILED,repo.findById("txn-m2-1")?.state)
+  assertTrue(result is SaleResult.Ambiguous)
+  assertEquals(TransactionState.UNKNOWN_OUTCOME,repo.findById("txn-m2-1")?.state)
  }
  @Test fun zeroAmountRejected() { assertThrows(IllegalArgumentException::class.java) { SaleRequest(Money(0,"KES"),"zero") } }
  @Test fun duplicateIdDoesNotOverwrite() {
