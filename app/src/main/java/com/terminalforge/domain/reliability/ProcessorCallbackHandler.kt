@@ -19,7 +19,7 @@ sealed interface CallbackHandlingResult {
  */
 class ProcessorCallbackHandler(
     private val repository: TransactionRepository,
-    private val deduplicator: CallbackDeduplicator
+    private val deduplicator: CallbackEventStore
 ) {
     @Synchronized
     fun handle(transactionId: String, eventId: String, result: ProcessorResult): CallbackHandlingResult {
