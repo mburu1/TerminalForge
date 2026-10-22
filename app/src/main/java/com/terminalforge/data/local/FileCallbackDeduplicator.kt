@@ -1,5 +1,6 @@
 package com.terminalforge.data.local
 
+import com.terminalforge.domain.reliability.CallbackEventStore
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.nio.file.AtomicMoveNotSupportedException
@@ -8,7 +9,7 @@ import java.nio.file.StandardCopyOption
 import java.util.Base64
 
 /** Durable single-process callback inbox; identity is (transactionId, eventId). */
-class FileCallbackDeduplicator(private val file: File) {
+class FileCallbackDeduplicator(private val file: File) : CallbackEventStore {
     private val seen = linkedSetOf<Pair<String, String>>()
 
     init {
@@ -21,7 +22,7 @@ class FileCallbackDeduplicator(private val file: File) {
     }
 
     @Synchronized
-    fun accept(transactionId: String, eventId: String): Boolean {
+    override fun accept(transactionId: String, eventId: String): Boolean {
         require(transactionId.isNotBlank()) { "Transaction ID must not be blank." }
         require(eventId.isNotBlank()) { "Callback event ID must not be blank." }
         val key = transactionId to eventId
