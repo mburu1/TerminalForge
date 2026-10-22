@@ -1,0 +1,39 @@
+sequenceDiagram
+  autonumber
+  actor Operator
+  participant UI as POS UI
+  participant UseCase as Sale Use Case
+  participant Repo as Transaction Repository
+  participant Orchestrator as Payment Orchestrator
+  participant Processor as Mock Processor
+  participant Hardware as Terminal Simulator
+  Operator->>UI: Enter synthetic amount and submit
+  UI->>UseCase: Execute sale(request, idempotencyKey)
+  UseCase->>Repo: Find existing operation by idempotency key
+  alt Existing logical operation
+    Repo-->>UseCase: Existing transaction
+    UseCase-->>UI: Return existing result (no duplicate charge)
+  else New logical operation
+    UseCase->>Repo: Persist CREATED transaction
+    UseCase->>Orchestrator: Process transaction
+    Orchestrator->>Hardware: Check terminal capability/status
+    Hardware-->>Orchestrator: Ready / unavailable
+    alt Terminal ready
+      Orchestrator->>Repo: Persist PROCESSING
+      Orchestrator->>Processor: Authorize synthetic request + idempotency key
+      alt Approved or declined response
+        Processor-->>Orchestrator: Definitive simulated outcome
+        Orchestrator->>Repo: Persist APPROVED or DECLINED
+        Orchestrator-->>UseCase: Safe transaction result
+      else Timeout or connection lost
+        Processor--xOrchestrator: Outcome cannot be confirmed
+        Orchestrator->>Repo: Persist UNKNOWN_OUTCOME
+        Orchestrator->>Repo: Mark reconciliation required
+        Orchestrator-->>UseCase: Pending confirmation; do not create a new charge
+      end
+    else Terminal unavailable
+      Orchestrator->>Repo: Persist safe failure / retryable pre-processing status
+      Orchestrator-->>UseCase: Terminal unavailable
+    end
+    UseCase-->>UI: Display result and safe reference
+  end
