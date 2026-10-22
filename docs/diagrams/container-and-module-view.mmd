@@ -1,0 +1,32 @@
+flowchart LR
+  subgraph Android["Android application"]
+    app["app: entry point, navigation, DI"]
+    features["feature/*: operator, sale, refund, history, reconciliation, terminal-care"]
+    ui["core/ui"]
+    common["core/common + core/model"]
+    domain["domain/*: transaction, payment, terminal, reconciliation"]
+    data["data/*: local, remote, repository"]
+    database["core/database: Room + migrations"]
+    security["core/security: redaction + secure-storage abstractions"]
+  end
+  subgraph Adapters["Replaceable adapters"]
+    processor["integrations/payment-mock"]
+    terminal["integrations/terminal-simulator"]
+    vendor["integrations/vendor-contracts"]
+  end
+  backend["Optional Kotlin/JVM backend"]
+  app --> features
+  app --> ui
+  features --> domain
+  features --> common
+  domain --> common
+  domain --> security
+  data --> domain
+  data --> database
+  processor -. implements .-> domain
+  terminal -. implements .-> domain
+  vendor -. contracts only .-> domain
+  data -. optional HTTP adapter .-> backend
+  domain -. "must not depend on" .-> data
+  domain -. "must not depend on" .-> processor
+  domain -. "must not depend on" .-> terminal
