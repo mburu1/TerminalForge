@@ -6,7 +6,9 @@ interface CardReader {
 }
 
 sealed interface CardReadResult {
-    data class CardDetected(val method: CardEntryMethod) : CardReadResult
+    val method: CardEntryMethod
+
+    data class CardDetected(override val method: CardEntryMethod) : CardReadResult
 }
 
 enum class CardEntryMethod { CONTACT, CONTACTLESS, MAGSTRIPE }
