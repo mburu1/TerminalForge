@@ -5,36 +5,47 @@ sequenceDiagram
     participant Sale as Sale Use Case
     participant Repo as Transaction Repository
     participant Pay as Payment Orchestrator
-    participant Processor as Mock Processor
     participant Terminal as Terminal Simulator
+    participant Processor as Mock Processor
 
     Operator->>UI: Enter synthetic amount and submit
-    UI->>Sale: Execute sale with request and idempotency key
-    Sale->>Repo: Find operation by idempotency key
-    alt Existing operation found
-        Repo-->>Sale: Return stored transaction
-        Sale-->>UI: Return existing result without duplicate processing
-    else New operation
-        Sale->>Repo: Persist CREATED transaction
-        Sale->>Pay: Process transaction
-        Pay->>Terminal: Check terminal status and capabilities
-        Terminal-->>Pay: Ready or unavailable
-        alt Terminal ready
-            Pay->>Repo: Persist PROCESSING state
-            Pay->>Processor: Authorize synthetic request with same idempotency key
-            alt Definitive response received
-                Processor-->>Pay: Simulated approval or decline
-                Pay->>Repo: Persist definitive outcome
-                Pay-->>Sale: Return safe transaction result
-            else Timeout or connection lost
-                Processor--xPay: Outcome cannot be confirmed
-                Pay->>Repo: Persist UNKNOWN_OUTCOME
-                Pay->>Repo: Mark reconciliation required
-                Pay-->>Sale: Return pending confirmation; do not resubmit as new
+    UI->>Sale: Execute sale(request, idempotencyKey)
+    Sale->>Sale: Validate amount, currency, and request
+
+    alt Invalid request
+        Sale-->>UI: Reject with safe validation error
+    else Valid request
+        Sale->>Repo: Atomically look up or reserve key with request fingerprint
+        alt Existing key with same fingerprint
+            Repo-->>Sale: Return stored operation and result
+            Sale-->>UI: Return existing result without reprocessing
+        else Existing key with different fingerprint
+            Repo-->>Sale: Report idempotency-key conflict
+            Sale-->>UI: Reject key reuse with a different request
+        else New operation reserved
+            Repo-->>Sale: Confirm key reservation
+            Sale->>Repo: Persist CREATED then VALIDATING
+            Sale->>Pay: Process validated transaction
+            Pay->>Terminal: Check terminal status and capabilities
+            Terminal-->>Pay: Ready or unavailable
+
+            alt Terminal unavailable
+                Pay->>Repo: Persist FAILED with safe pre-processing reason
+                Pay-->>Sale: Return terminal unavailable
+            else Terminal ready
+                Pay->>Repo: Persist READY then PROCESSING
+                Pay->>Processor: Authorize synthetic request with same idempotency key
+                alt Definitive response received
+                    Processor-->>Pay: Simulated approval or decline
+                    Pay->>Repo: Persist definitive outcome and safe processor reference
+                    Pay-->>Sale: Return final transaction result
+                else Timeout or connection lost
+                    Processor--xPay: Outcome cannot be confirmed
+                    Pay->>Repo: Persist UNKNOWN_OUTCOME
+                    Pay->>Repo: Mark reconciliation required
+                    Pay-->>Sale: Return pending confirmation; do not submit a new operation
+                end
             end
-        else Terminal unavailable
-            Pay->>Repo: Persist pre-processing failure
-            Pay-->>Sale: Return terminal unavailable
+            Sale-->>UI: Display result, status, and safe reference
         end
-        Sale-->>UI: Display result and safe reference
     end
