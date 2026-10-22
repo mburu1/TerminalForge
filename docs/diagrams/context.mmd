@@ -1,0 +1,16 @@
+flowchart TB
+  operator["POS Operator"] --> app["TerminalForge Android POS"]
+  technician["Support Technician"] --> care["Terminal Care workflow"]
+  app --> domain["Domain use cases"]
+  care --> maintenance["Maintenance domain"]
+  domain --> paymentPort["PaymentProcessor port"]
+  domain --> hardwarePort["TerminalHardware / CardReader / ReceiptPrinter ports"]
+  domain --> transactionRepo["TransactionRepository port"]
+  transactionRepo --> localDb[("Local Room database")]
+  paymentPort --> mockProcessor["Mock payment processor"]
+  hardwarePort --> simulator["Terminal hardware simulator"]
+  mockProcessor -. "synthetic settlement feed" .-> reconciliation["Reconciliation use case"]
+  localDb --> reconciliation
+  reconciliation --> report["Reconciliation results"]
+  app -. "optional future integration" .-> backend["Optional Kotlin/JVM sandbox API"]
+  backend -. "no live credentials or card data" .-> boundary["Sandbox-only boundary"]
