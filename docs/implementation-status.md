@@ -20,5 +20,15 @@ Last updated: 2026-10-22
 - [x] Tests for deterministic output, approval, decline, processor failure, adapter exceptions, retrieval, and duplicate IDs
 - [ ] Run Gradle tests and confirm CI passes
 
+## M3 — Reliability and recovery
+- [x] Idempotency-key replay returns the original transaction and conflicting payloads are rejected
+- [x] Persist PROCESSING before processor invocation
+- [x] Timeout/adapter exception maps to UNKNOWN_OUTCOME without automatic retry
+- [x] Callback event deduplication and late-callback reconciliation routing
+- [x] File-backed transaction snapshot and callback inbox for restart exercises
+- [x] Startup recovery moves interrupted transactions to RECONCILIATION_REQUIRED
+- [x] Tests for idempotency, timeout, duplicate callbacks, late callbacks, and restart recovery
+- [ ] Run Gradle tests, lint, assemble, and confirm CI passes
+
 ## Scope notes
-The repository is in-memory and not durable. Determinism is not idempotency. Ambiguous timeouts, logical-request deduplication, and recovery belong to M3. Build success is not claimed until Gradle tasks or CI complete successfully.
+File-backed adapters are intentionally single-process educational implementations, not substitutes for Room/SQL transactions or a unique constraint in a multi-process production system. Exactly-once execution across an external processor is not claimed. Build success is not claimed until CI completes successfully.
