@@ -38,8 +38,12 @@ class FileTransactionRepository(private val file: File) : TransactionRepository 
     @Synchronized
     override fun update(previous: Transaction, replacement: Transaction) {
         require(previous.id == replacement.id) { "Cannot change transaction identity." }
+        require(previous.amount == replacement.amount) { "Cannot change transaction amount." }
+        require(previous.operationType == replacement.operationType) { "Cannot change operation type." }
+        require(previous.createdAtEpochMillis == replacement.createdAtEpochMillis) { "Cannot change creation time." }
         require(transactions[previous.id] == previous) { "Transaction changed concurrently." }
         require(replacement.idempotencyKey == previous.idempotencyKey) { "Cannot change idempotency key." }
+        previous.transitionTo(replacement.state) // validate the existing domain transition graph
         transactions[replacement.id] = replacement
         persistOrRollback(replacement.id, previous)
     }
