@@ -43,7 +43,7 @@ sequenceDiagram
                     Processor--xPay: Outcome cannot be confirmed
                     Pay->>Repo: Persist UNKNOWN_OUTCOME
                     Pay->>Repo: Mark reconciliation required
-                    Pay-->>Sale: Return pending confirmation; do not submit a new operation
+                    Pay-->>Sale: Return pending confirmation and do not submit a new operation
                 end
             end
             Sale-->>UI: Display result, status, and safe reference
