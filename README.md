@@ -4,21 +4,34 @@ Simulator-first Android POS Terminal Architecture Lab built with Kotlin, Java in
 
 > Educational portfolio project only. Use synthetic data and mock/sandbox integrations. This is not production payment software and does not claim PCI DSS, EMVCo, card-scheme, or processor certification. Never use real cardholder data, PINs, cryptographic keys, or live payment credentials.
 
-## M2 simulated-sale vertical slice
+## Milestones
 
-M2 includes an Android-independent payment processor port, deterministic mock processor, in-memory transaction repository, and ExecuteSale use case. It reuses the existing Money, Transaction, OperationType, and TransactionState model. The mock supports APPROVED, DECLINED, and FAILED scenarios. Approved references are synthetic and stable for the same transaction ID. Adapter exceptions become typed failures, and duplicate transaction IDs are rejected before processor invocation.
+- **M0 — Skeleton:** Android Gradle project and CI.
+- **M1 — Domain foundation:** Money, transaction types, and legal state transitions.
+- **M2 — Simulated sale:** Android-free processor contract, deterministic mock, transaction repository, and sale use case.
+- **M3 — Reliability and recovery:** Idempotency-key enforcement, timeout ambiguity, duplicate/late callback handling, durable simulator snapshots, and startup recovery to reconciliation-required state.
 
-### Verify
+## M3 reliability behavior
 
-From the repository root, with JDK 17 and Android SDK configured, run:
+- A replay with the same idempotency key and same amount returns the original transaction without invoking the processor again.
+- Reusing a key with a different amount is rejected.
+- The transaction is persisted as PROCESSING before processor invocation.
+- A timeout or unexpected adapter exception becomes UNKNOWN_OUTCOME, never a false decline or approval. The coordinator does not automatically retry.
+- Callback events are deduplicated by transaction ID and event ID. Late callbacks after timeout are routed to reconciliation instead of silently rewriting the transaction outcome.
+- Startup recovery moves persisted PROCESSING or UNKNOWN_OUTCOME transactions to RECONCILIATION_REQUIRED without retrying the processor.
+- File-backed adapters are small single-process educational implementations. Use a database with unique constraints and atomic transactions for multi-process or production-grade persistence.
 
-- `./gradlew :app:testDebugUnitTest`
-- `./gradlew :app:lintDebug`
-- `./gradlew :app:assembleDebug`
+See [M3 reliability policy](docs/payments/idempotency-and-retries.md) and [implementation status](docs/implementation-status.md).
 
-On Windows, use `gradlew.bat` instead of `./gradlew`. If wrapper scripts are not present, use Android Studio Gradle sync or generate and commit the wrapper first.
+## Verify
 
-The M2 repository is in-memory and is not durable across process restarts. Determinism is not idempotency; duplicate logical requests, timeout ambiguity, and recovery remain M3 work.
+With JDK 17 and Android SDK configured, run from the repository root:
+
+- ./gradlew :app:testDebugUnitTest
+- ./gradlew :app:lintDebug
+- ./gradlew :app:assembleDebug
+
+On Windows, use gradlew.bat. The Gradle wrapper files are not yet committed, so current CI bootstraps Gradle before executing these tasks. Build success is not claimed until CI completes successfully.
 
 ## Architecture documentation
 
@@ -32,7 +45,3 @@ See [TerminalForge POS Architecture README](TerminalForge_POS_Architecture_READM
 - Use explicit transaction states and reconciliation for ambiguous outcomes.
 - Store money as integer minor units; never use floating-point arithmetic for amounts.
 - Keep diagnostics redacted and use synthetic data only.
-
-## Current status
-
-M0 and M1 foundations are present. The M2 simulated-sale domain slice and its unit tests are implemented. Run the documented Gradle tasks and inspect CI before treating the build as verified.
