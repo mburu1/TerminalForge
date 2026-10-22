@@ -1,22 +1,22 @@
 flowchart TD
-  start([Start reconciliation run]) --> loadLocal["Load eligible local transactions"]
-  start --> loadFeed["Load synthetic settlement feed"]
-  loadLocal --> normalize["Normalize references, currency, amount and dates"]
-  loadFeed --> normalize
-  normalize --> match["Match by safe processor reference and operation identity"]
-  match --> exact{Reference + amount + currency match?}
-  exact -- Yes --> matched["Mark MATCHED"]
-  exact -- No --> classify{Classify discrepancy}
-  classify -- Missing in feed --> absent["LOCAL_ONLY"]
-  classify -- Missing locally --> extra["SETTLEMENT_ONLY"]
-  classify -- Amount differs --> amount["AMOUNT_MISMATCH"]
-  classify -- Currency differs --> currency["CURRENCY_MISMATCH"]
-  classify -- Ambiguous state --> ambiguous["OUTCOME_UNCONFIRMED"]
-  matched --> report["Persist audit summary and safe discrepancy details"]
-  absent --> report
-  extra --> report
-  amount --> report
-  currency --> report
-  ambiguous --> report
-  report --> review["Operator reviews exceptions; no automatic new charge"]
-  review --> end([Run complete])
+    start([Start reconciliation run]) --> loadLocal["Load eligible local transactions"]
+    start --> loadFeed["Load synthetic settlement feed"]
+    loadLocal --> normalize["Normalize references, currency, amount, and dates"]
+    loadFeed --> normalize
+    normalize --> match["Match by processor reference and operation identity"]
+    match --> exact{"Reference, amount, and currency match?"}
+    exact -- Yes --> matched["Mark MATCHED"]
+    exact -- No --> classify{"Classify discrepancy"}
+    classify -- "Missing from settlement feed" --> absent["LOCAL_ONLY"]
+    classify -- "Missing locally" --> extra["SETTLEMENT_ONLY"]
+    classify -- "Amount differs" --> amount["AMOUNT_MISMATCH"]
+    classify -- "Currency differs" --> currency["CURRENCY_MISMATCH"]
+    classify -- "Ambiguous transaction state" --> ambiguous["OUTCOME_UNCONFIRMED"]
+    matched --> report["Persist audit summary and redacted discrepancy details"]
+    absent --> report
+    extra --> report
+    amount --> report
+    currency --> report
+    ambiguous --> report
+    report --> review["Operator reviews exceptions; never create an automatic replacement charge"]
+    review --> complete([Run complete])
