@@ -86,25 +86,37 @@ private fun PosScreen(repository: FileTransactionRepository, executeSale: Execut
                         else {
                             busy = true; error = null; message = null
                             scope.launch {
-                                val result = withContext(Dispatchers.IO) {
-                                    executeSale.execute(SaleRequest(Money(minor, "KES"), "sale-${UUID.randomUUID()}"))
+                                try {
+                                    val result = withContext(Dispatchers.IO) {
+                                        executeSale.execute(SaleRequest(Money(minor, "KES"), "sale-${UUID.randomUUID()}"))
+                                    }
+                                    refresh()
+                                    selected = when (result) {
+                                        is SaleResult.Completed -> result.transaction
+                                        is SaleResult.Declined -> result.transaction
+                                        is SaleResult.Failed -> result.transaction
+                                        is SaleResult.Ambiguous -> result.transaction
+                                        is SaleResult.IdempotentReplay -> result.transaction
+                                    }
+                                    message = when (result) {
+                                        is SaleResult.Completed -> "APPROVED • ${result.transaction.id}"
+                                        is SaleResult.Declined -> "DECLINED • ${result.reasonCode}"
+                                        is SaleResult.Failed -> "FAILED • ${result.reasonCode}"
+                                        is SaleResult.Ambiguous -> "OUTCOME UNKNOWN • Reconciliation required. Do not retry automatically."
+                                        is SaleResult.IdempotentReplay -> "EXISTING TRANSACTION • ${result.transaction.id}"
+                                    }
+                                } catch (ex: Exception) {
+                                    // A UI-level failure must not strand the operator in a busy state.
+                                    // Never turn an unexpected failure into a successful payment message.
+                                    refresh()
+                                    error = when (ex) {
+                                        is com.terminalforge.domain.sale.IdempotencyConflict ->
+                                            "This request conflicts with an existing transaction. Review transaction history."
+                                        else -> "Unable to complete the simulated sale. Check transaction history before trying again."
+                                    }
+                                } finally {
+                                    busy = false
                                 }
-                                refresh()
-                                selected = when (result) {
-                                    is SaleResult.Completed -> result.transaction
-                                    is SaleResult.Declined -> result.transaction
-                                    is SaleResult.Failed -> result.transaction
-                                    is SaleResult.Ambiguous -> result.transaction
-                                    is SaleResult.IdempotentReplay -> result.transaction
-                                }
-                                message = when (result) {
-                                    is SaleResult.Completed -> "APPROVED • ${result.transaction.id}"
-                                    is SaleResult.Declined -> "DECLINED • ${result.reasonCode}"
-                                    is SaleResult.Failed -> "FAILED • ${result.reasonCode}"
-                                    is SaleResult.Ambiguous -> "OUTCOME UNKNOWN • Reconciliation required. Do not retry automatically."
-                                    is SaleResult.IdempotentReplay -> "EXISTING TRANSACTION • ${result.transaction.id}"
-                                }
-                                busy = false
                             }
                         }
                     }) { Text("Process simulated sale") }
