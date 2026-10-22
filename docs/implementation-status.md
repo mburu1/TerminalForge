@@ -39,5 +39,14 @@ Last updated: 2026-10-22
 - [x] Unit tests for default behavior, faults, status reporting, and operator cancellation
 - [ ] Run Gradle tests, lint, assemble, and confirm CI passes
 
+## M5 — Operator workflow hardware integration
+- [x] Card-reader simulator runs before the sale use case; reader faults prevent submission
+- [x] Payment authorization remains owned by `ExecuteSale` and the payment processor
+- [x] Receipt printing runs only after a definitive approval
+- [x] Receipt-printer faults are reported separately and never rewrite an approved transaction
+- [x] Terminal reader/printer status is displayed in the operator screen
+- [x] Coroutine cancellation is rethrown instead of being converted into an ordinary UI error
+- [ ] Run Gradle tests, lint, assemble, and confirm CI passes
+
 ## Scope notes
 Hardware interfaces are ports only; no live device SDK, PIN capture, payment cryptography, or certification claims are included. Simulator faults are deterministic and injected through configuration. File-backed transaction storage is an educational single-process adapter, not a substitute for Room/SQL transactions or a unique constraint in a multi-process production system. Exactly-once execution across an external processor is not claimed. Build success is not claimed until CI completes successfully.

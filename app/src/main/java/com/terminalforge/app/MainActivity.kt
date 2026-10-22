@@ -21,6 +21,12 @@ import com.terminalforge.domain.sale.SaleResult
 import com.terminalforge.domain.transaction.Money
 import com.terminalforge.domain.transaction.Transaction
 import com.terminalforge.domain.transaction.TransactionState
+import com.terminalforge.hardware.HardwareOperation
+import com.terminalforge.hardware.HardwareOperationException
+import com.terminalforge.hardware.Receipt
+import com.terminalforge.hardware.SimulatedTerminalHardware
+import com.terminalforge.hardware.TerminalStatus
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -39,14 +45,15 @@ class MainActivity : ComponentActivity() {
             override fun newTransactionId() = UUID.randomUUID().toString()
             override fun nowEpochMillis() = System.currentTimeMillis()
         })
-        setContent { MaterialTheme { PosScreen(repository, useCase) } }
+        val hardware = SimulatedTerminalHardware()
+        setContent { MaterialTheme { PosScreen(repository, useCase, hardware) } }
     }
 }
 
 private enum class Page { SALE, HISTORY, DETAIL }
 
 @Composable
-private fun PosScreen(repository: FileTransactionRepository, executeSale: ExecuteSale) {
+private fun PosScreen(repository: FileTransactionRepository, executeSale: ExecuteSale, hardware: SimulatedTerminalHardware) {
     val scope = rememberCoroutineScope()
     var page by remember { mutableStateOf(Page.SALE) }
     var amount by remember { mutableStateOf("") }
@@ -55,9 +62,13 @@ private fun PosScreen(repository: FileTransactionRepository, executeSale: Execut
     var message by remember { mutableStateOf<String?>(null) }
     var rows by remember { mutableStateOf(repository.findAll().sortedByDescending { it.createdAtEpochMillis }) }
     var selected by remember { mutableStateOf<Transaction?>(null) }
+    var terminalStatus by remember { mutableStateOf<TerminalStatus?>(null) }
     fun refresh() {
         rows = repository.findAll().sortedByDescending { it.createdAtEpochMillis }
         selected = selected?.let { old -> rows.firstOrNull { it.id == old.id } }
+    }
+    LaunchedEffect(hardware) {
+        terminalStatus = runCatching { hardware.getStatus() }.getOrNull()
     }
 
     Surface(Modifier.fillMaxSize()) {
@@ -65,6 +76,9 @@ private fun PosScreen(repository: FileTransactionRepository, executeSale: Execut
             verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text("TerminalForge", style = MaterialTheme.typography.headlineMedium)
             Text("SIMULATOR MODE • KES • No live payments", style = MaterialTheme.typography.labelMedium)
+            terminalStatus?.let { status ->
+                Text("Hardware • Reader: ${status.reader} • Printer: ${status.printer}", style = MaterialTheme.typography.bodySmall)
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { page = Page.SALE; message = null }) { Text("New sale") }
                 OutlinedButton(onClick = { refresh(); page = Page.HISTORY }) { Text("History (${rows.size})") }
@@ -87,9 +101,26 @@ private fun PosScreen(repository: FileTransactionRepository, executeSale: Execut
                             busy = true; error = null; message = null
                             scope.launch {
                                 try {
+                                    val card = withContext(Dispatchers.IO) { hardware.readCard() }
                                     val result = withContext(Dispatchers.IO) {
                                         executeSale.execute(SaleRequest(Money(minor, "KES"), "sale-${UUID.randomUUID()}"))
                                     }
+                                    val receiptOutcome = if (result is SaleResult.Completed) {
+                                        try {
+                                            withContext(Dispatchers.IO) {
+                                                hardware.print(Receipt(result.transaction.id, listOf(
+                                                    "TerminalForge", "Transaction: ${result.transaction.id}",
+                                                    "Amount: ${money(result.transaction)}", "Status: APPROVED"
+                                                )))
+                                            }
+                                            "RECEIPT PRINTED"
+                                        } catch (ex: CancellationException) {
+                                            throw ex
+                                        } catch (_: Exception) {
+                                            "RECEIPT PRINT FAILED — payment remains approved; reprint or provide a manual receipt"
+                                        }
+                                    } else null
+                                    terminalStatus = runCatching { withContext(Dispatchers.IO) { hardware.getStatus() } }.getOrNull()
                                     refresh()
                                     selected = when (result) {
                                         is SaleResult.Completed -> result.transaction
@@ -99,17 +130,24 @@ private fun PosScreen(repository: FileTransactionRepository, executeSale: Execut
                                         is SaleResult.IdempotentReplay -> result.transaction
                                     }
                                     message = when (result) {
-                                        is SaleResult.Completed -> "APPROVED • ${result.transaction.id}"
+                                        is SaleResult.Completed -> "APPROVED • ${result.transaction.id} • CARD ${card.method} • ${receiptOutcome}"
                                         is SaleResult.Declined -> "DECLINED • ${result.reasonCode}"
                                         is SaleResult.Failed -> "FAILED • ${result.reasonCode}"
                                         is SaleResult.Ambiguous -> "OUTCOME UNKNOWN • Reconciliation required. Do not retry automatically."
                                         is SaleResult.IdempotentReplay -> "EXISTING TRANSACTION • ${result.transaction.id}"
                                     }
+                                } catch (ex: CancellationException) {
+                                    throw ex
                                 } catch (ex: Exception) {
                                     // A UI-level failure must not strand the operator in a busy state.
                                     // Never turn an unexpected failure into a successful payment message.
                                     refresh()
                                     error = when (ex) {
+                                        is HardwareOperationException -> when (ex.operation) {
+                                            HardwareOperation.CARD_READ -> "CARD READ FAILED (${ex.fault}). No sale was submitted."
+                                            HardwareOperation.RECEIPT_PRINT -> "Receipt printer failed (${ex.fault}). Check transaction history before retrying."
+                                            HardwareOperation.STATUS_CHECK -> "Terminal status is unavailable."
+                                        }
                                         is com.terminalforge.domain.sale.IdempotencyConflict ->
                                             "This request conflicts with an existing transaction. Review transaction history."
                                         else -> "Unable to complete the simulated sale. Check transaction history before trying again."
