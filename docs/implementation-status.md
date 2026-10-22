@@ -4,7 +4,7 @@ Last updated: 2026-10-22
 
 ## M0 — Skeleton
 - [x] Gradle Kotlin DSL, version catalog, Compose app, manifest, CI workflow
-- [ ] Commit Gradle Wrapper files
+- [x] Commit Gradle Wrapper scripts, JAR, and distribution properties
 - [ ] Confirm clean build and CI success
 
 ## M1 — Domain foundation
@@ -18,6 +18,7 @@ Last updated: 2026-10-22
 - [x] TransactionRepository contract and thread-safe in-memory adapter
 - [x] ExecuteSale use case reusing existing domain state transitions
 - [x] Tests for deterministic output, approval, decline, processor failure, adapter exceptions, retrieval, and duplicate IDs
+- [x] Compose operator experience: sale entry, progress indication, typed result display, history, and transaction details wired to `ExecuteSale`
 - [ ] Run Gradle tests and confirm CI passes
 
 ## M3 — Reliability and recovery

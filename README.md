@@ -11,6 +11,10 @@ Simulator-first Android POS Terminal Architecture Lab built with Kotlin, Java in
 - **M2 — Simulated sale:** Android-free processor contract, deterministic mock, transaction repository, and sale use case.
 - **M3 — Reliability and recovery:** Idempotency-key enforcement, timeout ambiguity, duplicate/late callback handling, durable simulator snapshots, and startup recovery to reconciliation-required state.
 
+## Operator experience (M2)
+
+The Android Compose screen provides sale amount entry, progress indication, result display, transaction history, and transaction details. It calls the existing `ExecuteSale` use case; business rules remain in the domain. Transactions use an app-private file snapshot for simulator restart/recovery exercises.
+
 ## M3 reliability behavior
 
 - A replay with the same idempotency key and same amount returns the original transaction without invoking the processor again.
@@ -31,7 +35,7 @@ With JDK 17 and Android SDK configured, run from the repository root:
 - ./gradlew :app:lintDebug
 - ./gradlew :app:assembleDebug
 
-On Windows, use gradlew.bat. The Gradle wrapper files are not yet committed, so current CI bootstraps Gradle before executing these tasks. Build success is not claimed until CI completes successfully.
+On Windows, use gradlew.bat. The Gradle Wrapper scripts, JAR, and distribution properties are committed. On Windows, run `gradlew.bat :app:testDebugUnitTest`, `gradlew.bat :app:lintDebug`, and `gradlew.bat :app:assembleDebug`. Build success is not claimed until CI completes successfully.
 
 ## Architecture documentation
 
