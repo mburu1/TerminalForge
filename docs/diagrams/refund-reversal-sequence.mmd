@@ -23,6 +23,6 @@ sequenceDiagram
         else Timeout or unknown response
             Processor--xOps: Outcome cannot be confirmed
             Ops->>Repo: Persist UNKNOWN_OUTCOME and reconciliation-required flag
-            Ops-->>UI: Show pending confirmation; do not create a new operation
+            Ops-->>UI: Show pending confirmation and do not create a new operation
         end
     end
