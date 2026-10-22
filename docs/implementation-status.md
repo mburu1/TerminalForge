@@ -8,15 +8,21 @@ Last updated: 2026-10-22
 - [x] Version catalog
 - [x] Kotlin Android app module with Jetpack Compose
 - [x] Minimal launch screen and manifest
-- [x] Initial unit-test source
 - [x] GitHub Actions workflow for unit tests, Android lint, and debug APK assembly
 - [ ] Commit the generated Gradle Wrapper scripts, JAR, and properties
 - [ ] Execute a clean build and confirm CI passes
 
+## M1 — Domain foundation
+
+- [x] Money value object using integer minor units and currency checks
+- [x] Transaction model, operation types, and explicit state transitions
+- [x] Unit tests for money arithmetic and transaction state invariants
+- [ ] Confirm domain tests pass in CI
+
 ## Next milestone
 
-M1: introduce pure Kotlin domain models for Money, transaction operation types, transaction states, transition rules, and deterministic tests. Keep domain tests independent of Android framework and emulator requirements.
+M2: build the simulated-sale vertical slice after CI verifies M0 and M1. Keep processor and hardware access behind interfaces, and persist ambiguous outcomes as UNKNOWN_OUTCOME rather than treating timeouts as declines.
 
 ## Verification caveat
 
-The source files and workflow have been committed, but no successful Gradle build or CI run is claimed. The workflow temporarily bootstraps the Gradle Wrapper because wrapper files have not yet been committed.
+The source files and workflow are committed, but a successful Gradle build is not claimed until CI completes successfully. The workflow temporarily bootstraps the Gradle Wrapper because wrapper files have not yet been committed.
