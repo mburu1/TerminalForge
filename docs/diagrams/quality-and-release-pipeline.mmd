@@ -1,0 +1,13 @@
+flowchart LR
+  commit["Commit / pull request"] --> checkout["Clean checkout"]
+  checkout --> wrapper["Verify Gradle wrapper and toolchain"]
+  wrapper --> unit["Domain and use-case unit tests"]
+  unit --> adapter["Adapter / repository / contract tests"]
+  adapter --> lint["Android Lint + static analysis"]
+  lint --> security["Secret scan + dependency review"]
+  security --> assemble["Assemble debug APK"]
+  assemble --> ui["UI / instrumentation tests when runner supports them"]
+  ui --> reports["Publish test and lint reports"]
+  reports --> review["Human review of diagrams, risks and release notes"]
+  review --> release["Demo release only"]
+  release --> guardrail["Synthetic data; no production payment configuration"]
