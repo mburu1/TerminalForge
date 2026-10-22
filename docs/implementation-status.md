@@ -7,7 +7,7 @@ Last updated: 2026-10-22
 - [x] Root Gradle Kotlin DSL settings and plugin declarations
 - [x] Version catalog
 - [x] Kotlin Android app module with Jetpack Compose
-- [x] Minimal launch screen and manifest
+- [x] Launch screen and manifest
 - [x] GitHub Actions workflow for unit tests, Android lint, and debug APK assembly
 - [ ] Commit the generated Gradle Wrapper scripts, JAR, and properties
 - [ ] Execute a clean build and confirm CI passes
@@ -19,10 +19,16 @@ Last updated: 2026-10-22
 - [x] Unit tests for money arithmetic and transaction state invariants
 - [ ] Confirm domain tests pass in CI
 
-## Next milestone
+## M2 — Simulated-sale vertical slice
 
-M2: build the simulated-sale vertical slice after CI verifies M0 and M1. Keep processor and hardware access behind interfaces, and persist ambiguous outcomes as UNKNOWN_OUTCOME rather than treating timeouts as declines.
+- [x] Payment processor port and explicit approved/declined/failed/unknown results
+- [x] Deterministic mock processor; approved is the default scenario
+- [x] Transaction repository port and thread-safe in-memory implementation
+- [x] Sale use case reusing M1 models and guarded state transitions
+- [x] Compose screen wired to the approved mock sale
+- [x] Unit tests for processor outcomes, persisted states, invalid amounts, duplicate idempotency keys, and processor exceptions
+- [ ] Run CI and verify unit tests, lint, and debug APK assembly
 
 ## Verification caveat
 
-The source files and workflow are committed, but a successful Gradle build is not claimed until CI completes successfully. The workflow temporarily bootstraps the Gradle Wrapper because wrapper files have not yet been committed.
+M2 source and tests are committed on the `feat/m2-approved-sale` branch. A successful Gradle build or CI run is not claimed until the workflow completes successfully. The in-memory repository is process-local and is not durable storage. Payment and hardware integrations remain simulated and replaceable; no live payments or hardware SDKs are used.
